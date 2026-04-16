@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  --color-bento-bg: var(--bento-bg);
+  --color-bento-card: var(--bento-card);
+  --color-bento-text-main: var(--bento-text-main);
+  --color-bento-text-sub: var(--bento-text-sub);
+  --color-bento-accent: var(--bento-accent);
+  --color-bento-accent-light: var(--bento-accent-light);
+  --color-bento-border: var(--bento-border);
+  
+  --radius-bento: 24px;
+}
+
+:root {
+  --bento-bg: #F0F2F5;
+  --bento-card: #FFFFFF;
+  --bento-text-main: #1A1C1E;
+  --bento-text-sub: #6C727A;
+  --bento-accent: #2D6A4F;
+  --bento-accent-light: #D8F3DC;
+  --bento-border: #E5E7EB;
+}
+
+:root.dark {
+  --bento-bg: #0F172A;
+  --bento-card: #1E293B;
+  --bento-text-main: #F8FAFC;
+  --bento-text-sub: #94A3B8;
+  --bento-accent: #10B981;
+  --bento-accent-light: #064E3B;
+  --bento-border: #334155;
+}
+
+@layer base {
+  body {
+    @apply bg-bento-bg text-bento-text-main font-sans antialiased transition-colors duration-300;
+  }
+}
+
+@layer components {
+  .bento-card {
+    @apply bg-bento-card border border-bento-border p-6 rounded-[--radius-bento] shadow-sm transition-all duration-300;
+  }
+  
+  .bento-btn {
+    @apply transition-all duration-200 hover:scale-[1.02] active:scale-95;
+  }
+
+  .bento-pill {
+    @apply bg-bento-bg px-4 py-2 rounded-full font-semibold text-sm text-bento-text-sub inline-flex items-center gap-2;
+  }
+}
+
+/* Custom scrollbar for that clean feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-bento-border rounded-full hover:bg-slate-300;
+}

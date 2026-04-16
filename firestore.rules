@@ -1,0 +1,145 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {uid}
+// Fields:
+//   - uid: string (required)
+//   - email: string (required)
+//   - role: string (required, 'admin' or 'user')
+//   - isSubscribed: bool (required)
+//   - subscriptionExpiry: string (optional, ISO 8601)
+//   - createdAt: string (required, ISO 8601)
+//
+// Collection: habits
+// Document ID: {habitId}
+// Fields:
+//   - id: string (optional)
+//   - uid: string (required)
+//   - title: string (required, < 100 chars)
+//   - description: string (optional, < 500 chars)
+//   - category: string (required, 'Morning', 'Deep Work', 'Wind Down')
+//   - frequency: string (required, 'daily', 'one-time')
+//   - streak: number (optional, >= 0)
+//   - attachments: list (optional, list of maps)
+//   - createdAt: string (required, ISO 8601)
+//
+// Collection: completions
+// Document ID: {uid_date}
+// Fields:
+//   - uid: string (required)
+//   - date: string (required, YYYY-MM-DD)
+//   - completedHabitIds: list (required, list of strings)
+//   - updatedAt: string (required, ISO 8601)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+
+    function isOwner(userId) {
+       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "2022520080.deepayan@ug.sharda.ac.in" && request.auth.token.email_verified == true)); 
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'isSubscribed', 'createdAt']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'user'] &&
+             data.isSubscribed is bool &&
+             data.createdAt is string;
+    }
+
+    function isValidHabit(data) {
+      return data.keys().hasAll(['uid', 'title', 'category', 'frequency', 'createdAt']) &&
+             data.uid is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             data.category in ['Morning', 'Deep Work', 'Wind Down'] &&
+             data.frequency in ['daily', 'one-time'] &&
+             (!('streak' in data) || (data.streak is number && data.streak >= 0)) &&
+             (!('attachments' in data) || (data.attachments is list && data.attachments.size() <= 10)) &&
+             data.createdAt is string;
+    }
+
+    function isValidCompletion(data) {
+      return data.keys().hasAll(['uid', 'date', 'completedHabitIds', 'updatedAt']) &&
+             data.uid is string &&
+             data.date is string &&
+             data.completedHabitIds is list &&
+             data.updatedAt is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Normal users can only create their own profile with role='user' and isSubscribed=false
+      // Admins can create anything
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (
+        (isOwner(userId) && request.resource.data.role == 'user' && request.resource.data.isSubscribed == false) ||
+        isAdmin()
+      );
+      
+      // Normal users can update their profile but NOT their role or isSubscribed status
+      // Admins can update anything
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (
+        (isOwner(userId) && 
+         request.resource.data.role == resource.data.role && 
+         request.resource.data.isSubscribed == resource.data.isSubscribed) ||
+        isAdmin()
+      );
+      
+      allow delete: if isAdmin();
+    }
+
+    match /habits/{habitId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                    isValidHabit(request.resource.data) && 
+                    request.resource.data.uid == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    isValidHabit(request.resource.data) && 
+                    (resource.data.uid == request.auth.uid || isAdmin()) &&
+                    (isAdmin() || request.resource.data.uid == resource.data.uid);
+                    
+      allow delete: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    match /completions/{completionId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.uid;
+      
+      allow create: if isAuthenticated() && 
+                      isValidCompletion(request.resource.data) && 
+                      request.resource.data.uid == request.auth.uid;
+                      
+      allow update: if isAuthenticated() && 
+                      isValidCompletion(request.resource.data) && 
+                      request.resource.data.uid == request.auth.uid &&
+                      resource.data.uid == request.auth.uid;
+                      
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

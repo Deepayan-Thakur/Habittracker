@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and subscription data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "isSubscribed": { "type": "boolean" },
+        "subscriptionExpiry": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "isSubscribed"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A habit or task tracked by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["Morning", "Deep Work", "Wind Down"] },
+        "frequency": { "type": "string", "enum": ["daily", "one-time"] },
+        "streak": { "type": "integer" },
+        "attachments": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "content": { "type": "string", "description": "Text content or reference link" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "title", "category", "frequency"]
+    },
+    "DayCompletion": {
+      "title": "DayCompletion",
+      "description": "Habit completions for a specific day",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "date": { "type": "string", "description": "YYYY-MM-DD" },
+        "completedHabitIds": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "date", "completedHabitIds"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "Private user profiles"
+    },
+    "/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "Habits created by users"
+    },
+    "/completions/{completionId}": {
+      "schema": "DayCompletion",
+      "description": "Completions indexed by uid_date"
+    }
+  }
+}
