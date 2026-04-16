@@ -9,7 +9,7 @@ import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
